@@ -1,0 +1,9 @@
+# ngspice runs (netlists and waveforms written by tools/run_tests.py)
+build/
+
+# vendor models with their own licences (see README: vendor models)
+models/vendor/
+
+# Python
+__pycache__/
+.venv/

@@ -1,0 +1,52 @@
+* ==============================================================================
+* sfs-stepper-power-spice: power stage models (ngspice)
+*
+* File:        models/l6387_behav.lib
+* Description: L6387E high- and low-side gate driver, behavioural model.
+*              Datasheet (VCC = 15 V, 25 degC): ton 110 ns, toff 105 ns, source
+*              400 mA, sink 650 mA, interlocking (HIN and LIN high -> both
+*              outputs low, no internal dead time), bootstrap DMOS 125 Ohm,
+*              input thresholds 1.5 / 3.6 V (modelled as one 2.5 V threshold).
+*              Delays: lossless lines (no XSPICE needed); output stages: smooth
+*              conductances, resistances VCC / I of the short-circuit currents.
+*
+* Author:      Anton Vynohradov
+* Email:       avynohradov@systemfromscratch.com
+* License:     Apache License 2.0
+* Copyright:   (c) 2026 Anton Vynohradov
+*
+* SPDX-License-Identifier: Apache-2.0
+* ==============================================================================
+
+* pins: hin lin vcc gnd boot hvg out lvg
+.subckt L6387_BEHAV hin lin vcc gnd boot hvg out lvg params: ton=110n toff=105n
++ rsrc=30 rsnk=18 rboot=125
+* interlock: logic levels 0 / 1, smooth thresholds at 2.5 V (keeps the solver robust)
+BH hl gnd V = 0.25 * (1 + tanh((V(hin, gnd) - 2.5) / 0.05)) * (1 - tanh((V(lin, gnd) - 2.5) / 0.05))
+BL ll gnd V = 0.25 * (1 + tanh((V(lin, gnd) - 2.5) / 0.05)) * (1 - tanh((V(hin, gnd) - 2.5) / 0.05))
+* propagation delay: matched lossless line, average of ton and toff (the 5 ns
+* difference is neglected); RC of 5 ns shapes the internal edge
+T1 hl gnd hd0 gnd Z0=50 TD={(ton + toff) / 2}
+RT1 hd0 gnd 50
+RHD hd0 hd 1k
+CHD hd gnd 5p
+T2 ll gnd ld0 gnd Z0=50 TD={(ton + toff) / 2}
+RT2 ld0 gnd 50
+RLD ld0 ld 1k
+CLD ld gnd 5p
+* output stages: conductances hd / rsrc to the supply and (1 - hd) / rsnk to the
+* reference (the gate charge is taken from the bootstrap capacitor / VCC)
+BHS boot hvg I = V(hd, gnd) * V(boot, hvg) / {rsrc}
+BHK hvg out I = (1 - V(hd, gnd)) * V(hvg, out) / {rsnk}
+BLS vcc lvg I = V(ld, gnd) * V(vcc, lvg) / {rsrc}
+BLK lvg gnd I = (1 - V(ld, gnd)) * V(lvg, gnd) / {rsnk}
+RHL hvg out 1Meg
+RLL lvg gnd 1Meg
+* output capacitance of the driver stages (keeps the output nodes dynamic)
+CHO hvg out 20p
+CLO lvg gnd 20p
+* bootstrap: DMOS (125 Ohm) in series with a diode
+RBOOT vcc bd {rboot}
+DBOOT bd boot DB
+.model DB D IS=1e-14 N=1
+.ends L6387_BEHAV

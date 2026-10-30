@@ -1,0 +1,35 @@
+* ==============================================================================
+* sfs-stepper-power-spice: power stage models (ngspice)
+*
+* File:        models/stl180n6f7_sfs.lib
+* Description: STL180N6F7 (60 V, 120 A, STripFET F7) - ngspice VDMOS model fitted
+*              to the datasheet by this project. NOT the ST model: it reproduces
+*              Rds(on), capacitances, gate charge and the body diode, enough for dead
+*              time and commutation studies at a few amperes.
+*
+*              Datasheet values used (typical, 25 degC):
+*                Rds(on) 1.9 mOhm (VGS = 10 V)    Ciss 4825 pF, Coss 2240 pF,
+*                Crss 216 pF (VDS = 25 V)         Qg 79.5 nC (VGS 0..10 V)
+*                VSD <= 1.2 V at 32 A             trr 60 ns, Qrr 72 nC
+*              Assumptions (not in the datasheet table): VGS(th) 3.0 V, internal
+*              gate resistance 1.2 Ohm, diode 0.70 V at 1 A / 1.0 V at 32 A.
+*              Fit checked by tests SP01 (tools/run_tests.py): Rds(on), VSD, Ciss,
+*              Coss, Crss, Qg against the datasheet.
+*
+* Author:      Anton Vynohradov
+* Email:       avynohradov@systemfromscratch.com
+* License:     Apache License 2.0
+* Copyright:   (c) 2026 Anton Vynohradov
+*
+* SPDX-License-Identifier: Apache-2.0
+* ==============================================================================
+
+* ngspice VDMOS model (power MOSFET with body diode and non-linear Cgd).
+* Use: M1 d g s STL180N6F7_SFS [temp=<degC>]
+.model STL180N6F7_SFS VDMOS (
++ vto=3.0 kp=102 lambda=0.002 mtriode=1
++ rd=0.3m rs=0.2m rg=1.2 tnom=25
++ cgs=4.6n cgdmax=3.5n cgdmin=0.12n a=0.6
++ cjo=12n vj=0.7 m=0.5 fc=0.5
++ is=1.7e-12 n=1.0 rb=6.6m tt=2n bv=66 ibv=1m
++ ksubthres=0.1 )

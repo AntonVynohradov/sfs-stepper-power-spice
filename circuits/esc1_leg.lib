@@ -1,0 +1,41 @@
+* ==============================================================================
+* sfs-stepper-power-spice: power stage models (ngspice)
+*
+* File:        circuits/esc1_leg.lib
+* Description: One half-bridge leg of the B-G431B-ESC1: L6387 driver, two
+*              STL180N6F7, gate resistors, bootstrap capacitor, low-side shunt.
+*              Values not published in the user manual (schematic MB1419) are
+*              parameters with assumed defaults - replace them with the schematic.
+*
+* Author:      Anton Vynohradov
+* Email:       avynohradov@systemfromscratch.com
+* License:     Apache License 2.0
+* Copyright:   (c) 2026 Anton Vynohradov
+*
+* SPDX-License-Identifier: Apache-2.0
+* ==============================================================================
+
+* pins: bus gnd out hin lin vcc shunt (shunt = top of the shunt resistor)
+* parameters:
+*   rg     gate resistor (assumption 10 Ohm)        cboot  bootstrap capacitor (assumption 1 uF)
+*   rsh    shunt (assumption 3 mOhm)                lsh    shunt + layout inductance (assumption 1 nH)
+*   lloop  commutation loop inductance (assumption 3 nH), split between the two switches
+*   rdamp  resistor across each layout inductance: losses of the loop (skin effect, bus
+*          capacitor ESR) that damp the ringing within a few ns (assumption 1 Ohm)
+*   tj     junction temperature (degC)
+.subckt ESC1_LEG bus gnd out hin lin vcc shunt params: rg=10 cboot=1u rsh=3m lsh=1n
++ lloop=3n rdamp=1 tj=25
+XDRV hin lin vcc gnd boot hvg out lvg L6387_BEHAV
+CBOOT boot out {cboot}
+RGH hvg gh {rg}
+RGL lvg gl {rg}
+LH bus dh {lloop / 2}
+RLH bus dh {rdamp}
+MQH dh gh out STL180N6F7_SFS temp={tj}
+MQL out gl sl STL180N6F7_SFS temp={tj}
+LL sl shunt {lloop / 2}
+RLL sl shunt {rdamp}
+RSH shunt sh2 {rsh}
+LSH sh2 gnd {lsh}
+RLSH sh2 gnd {rdamp}
+.ends ESC1_LEG
